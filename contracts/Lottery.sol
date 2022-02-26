@@ -15,24 +15,25 @@ contract Lottery is VRFConsumerBase, Ownable {
     enum LOTTERY_STATE {
         OPEN,
         CLOSED,
-        CLACULATING_WINNER
+        CALCULATING_WINNER
     }
     LOTTERY_STATE public lottery_state;
     uint256 public fee;
-    bytes32 public keyHash;
+    bytes32 public keyhash;
+    event RequestedRandomness(bytes32 requestId);
 
     constructor(
         address _priceFeedAddress,
         address _vrfCoordinator,
         address _link,
         uint256 _fee,
-        bytes32 _keyHash
+        bytes32 _keyhash
     ) public VRFConsumerBase(_vrfCoordinator, _link) {
         usdEntryFee = 50 * (10**18);
         ethUsdPriceFeed = AggregatorV3Interface(_priceFeedAddress);
         lottery_state = LOTTERY_STATE.CLOSED;
         fee = _fee;
-        keyHash = _keyHash;
+        keyhash = _keyhash;
     }
 
     function enter() public payable {
@@ -45,8 +46,8 @@ contract Lottery is VRFConsumerBase, Ownable {
     function getEntranceFee() public view returns (uint256) {
         (, int256 price, , , ) = ethUsdPriceFeed.latestRoundData();
         uint256 adjustedPrice = uint256(price) * 10**10; // 18 decimals
-        // $50, price is $2000/ETH
-        // 50/2000
+        // $50, $2,000 / ETH
+        // 50/2,000
         // 50 * 100000 / 2000
         uint256 costToEnter = (usdEntryFee * 10**18) / adjustedPrice;
         return costToEnter;
@@ -71,8 +72,8 @@ contract Lottery is VRFConsumerBase, Ownable {
         //         )
         //     )
         // ) % players.length;
-        lottery_state = LOTTERY_STATE.CLACULATING_WINNER;
-        bytes32 requestId = requestRandomness(keyHash, fee);
+        lottery_state = LOTTERY_STATE.CALCULATING_WINNER;
+        bytes32 requestId = requestRandomness(keyhash, fee);
     }
 
     function fulfillRandomness(bytes32 _requestId, uint256 _randomness)
@@ -80,14 +81,14 @@ contract Lottery is VRFConsumerBase, Ownable {
         override
     {
         require(
-            lottery_state == LOTTERY_STATE.CLACULATING_WINNER,
-            "You're not there yet!"
+            lottery_state == LOTTERY_STATE.CALCULATING_WINNER,
+            "You aren't there yet!"
         );
         require(_randomness > 0, "random-not-found");
         uint256 indexOfWinner = _randomness % players.length;
         recentWinner = players[indexOfWinner];
         recentWinner.transfer(address(this).balance);
-        // Reset lotto
+        // Reset
         players = new address payable[](0);
         lottery_state = LOTTERY_STATE.CLOSED;
         randomness = _randomness;

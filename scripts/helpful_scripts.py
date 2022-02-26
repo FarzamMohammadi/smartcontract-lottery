@@ -75,3 +75,18 @@ def deploy_mocks(decimals=DECIMALS, initial_value=INITIAL_VALUE):
     link_token = LinkToken.deploy({"from": account})
     VRFCoordinatorMock.deploy(link_token.address, {"from": account})
     print("Deployed!")
+
+
+def fund_with_link(
+    contract_address, account=None, link_token=None, amount=100000000000000000
+):  # 0.1 Link
+    account = account if account else get_account()
+    link_token = link_token if link_token else get_contract("link_token")
+    # Without using the interface
+    tx = link_token.transfer(contract_address, amount, {"from": account})
+    # Using the interface
+    # link_token_contract = interface.LinkTokenInterface(link_token.addres)
+    # tx = link_token_contract.transfer(contract_address, amount, {"from": account})
+    tx.wait(1)
+    print("Fund contract!")
+    return tx
