@@ -61,7 +61,7 @@ contract Lottery is VRFConsumerBase, Ownable {
         lottery_state = LOTTERY_STATE.OPEN;
     }
 
-    function endLottery() public {
+    function endLottery() public onlyOwner {
         // uint256(
         //     keccack256(
         //         abi.encodePacked(
